@@ -224,7 +224,7 @@ void MessageListModel::showInactivemessages(bool show) {
 void MessageListModel::dbcModified() {
   dbc_messages_.clear();
   for (const auto &[_, m] : dbc()->getMessages(-1)) {
-    dbc_messages_.insert(MessageId{.source = INVALID_SOURCE, .address = m.address});
+    dbc_messages_.insert(MessageId{INVALID_SOURCE, m.address});
   }
   filterAndSort();
 }
@@ -312,7 +312,7 @@ bool MessageListModel::filterAndSort() {
   auto dbc_msgs = dbc_messages_;
   for (const auto &[id, m] : can->lastMessages()) {
     all_messages.push_back(id);
-    dbc_msgs.erase(MessageId{.source = INVALID_SOURCE, .address = id.address});
+    dbc_msgs.erase(MessageId{INVALID_SOURCE, id.address});
   }
   all_messages.insert(all_messages.end(), dbc_msgs.begin(), dbc_msgs.end());
 

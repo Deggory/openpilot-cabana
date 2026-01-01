@@ -5,7 +5,7 @@
 #include "utils/util.h"
 
 uint qHash(const MessageId &item) {
-  return qHash(item.source) ^ qHash(item.address);
+  return qHash(item.raw);
 }
 
 // cabana::Msg

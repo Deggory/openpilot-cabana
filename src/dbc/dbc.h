@@ -12,9 +12,20 @@ const QString UNTITLED = "untitled";
 const QString DEFAULT_NODE_NAME = "XXX";
 constexpr int CAN_MAX_DATA_BYTES = 64;
 
+#pragma pack(push, 1)
 struct MessageId {
-  uint8_t source = 0;
-  uint32_t address = 0;
+  union {
+    struct {
+      uint32_t address;
+      uint8_t source;
+    };
+    uint64_t raw;
+  };
+
+  MessageId(uint8_t s = 0, uint32_t a = 0) : raw(0) {
+    source = s;
+    address = a;
+  }
 
   QString toString() const {
     return QString("%1:%2").arg(source).arg(QString::number(address, 16).toUpper());
@@ -23,27 +34,18 @@ struct MessageId {
   inline static MessageId fromString(const QString &str) {
     auto parts = str.split(':');
     if (parts.size() != 2) return {};
-    return MessageId{.source = uint8_t(parts[0].toUInt()), .address = parts[1].toUInt(nullptr, 16)};
+    return MessageId(uint8_t(parts[0].toUInt()), parts[1].toUInt(nullptr, 16));
   }
 
-  bool operator==(const MessageId &other) const {
-    return source == other.source && address == other.address;
-  }
-
-  bool operator!=(const MessageId &other) const {
-    return !(*this == other);
-  }
-
-  bool operator<(const MessageId &other) const {
-    return std::tie(source, address) < std::tie(other.source, other.address);
-  }
-
-  bool operator>(const MessageId &other) const {
-    return std::tie(source, address) > std::tie(other.source, other.address);
-  }
+  bool operator==(const MessageId &other) const { return raw == other.raw; }
+  bool operator!=(const MessageId &other) const { return raw != other.raw; }
+  bool operator<(const MessageId &other) const { return raw < other.raw; }
+  bool operator>(const MessageId &other) const { return raw > other.raw; }
 };
+#pragma pack(pop)
 
 uint qHash(const MessageId &item);
+
 Q_DECLARE_METATYPE(MessageId);
 
 template <>

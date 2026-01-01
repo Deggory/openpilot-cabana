@@ -30,7 +30,7 @@ void AbstractStream::updateMasks() {
 
   for (const auto s : sources) {
     for (const auto &[address, m] : dbc()->getMessages(s)) {
-      masks_[{.source = (uint8_t)s, .address = address}] = m.mask;
+      masks_[{(uint8_t)s, address}] = m.mask;
     }
   }
   // clear bit change counts
@@ -204,7 +204,7 @@ void AbstractStream::mergeEvents(const std::vector<const CanEvent *> &events) {
 
   // Group events by message ID
   for (auto e : events) {
-    msg_events[{.source = e->src, .address = e->address}].push_back(e);
+    msg_events[{e->src, e->address}].push_back(e);
   }
 
   if (!events.empty()) {

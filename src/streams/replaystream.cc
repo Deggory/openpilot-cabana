@@ -101,7 +101,7 @@ bool ReplayStream::eventFilter(const Event *event) {
     capnp::FlatArrayMessageReader reader(event->data);
     auto e = reader.getRoot<cereal::Event>();
     for (const auto &c : e.getCan()) {
-      MessageId id = {.source = c.getSrc(), .address = c.getAddress()};
+      MessageId id(c.getSrc(), c.getAddress());
       const auto dat = c.getDat();
       updateEvent(id, current_sec, (const uint8_t*)dat.begin(), dat.size());
     }
