@@ -121,7 +121,7 @@ void HistoryLogModel::fetchData(std::deque<Message>::iterator insert_pos, uint64
       const auto freq = can->lastMessage(msg_id)->freq;
       const std::vector<uint8_t> no_mask;
       for (auto &m : msgs) {
-        hex_colors.compute(msg_id, m.data.data(), m.data.size(), m.mono_time / (double)1e9, can->getSpeed(), no_mask, freq);
+        hex_colors.update(msg_id, m.data.data(), m.data.size(), m.mono_time / (double)1e9, can->getSpeed(), no_mask, freq);
         m.colors = hex_colors.colors;
       }
     }

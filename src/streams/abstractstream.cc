@@ -15,7 +15,7 @@ AbstractStream::AbstractStream(QObject *parent) : QObject(parent) {
   assert(parent != nullptr);
   event_buffer_ = std::make_unique<MonotonicBuffer>(EVENT_NEXT_BUFFER_SIZE);
 
-  QObject::connect(this, &AbstractStream::privateUpdateLastMsgsSignal, this, &AbstractStream::updateLastMessages, Qt::QueuedConnection);
+  QObject::connect(this, &AbstractStream::privateUpdateLastMsgsSignal, this, &AbstractStream::syncLastMessages, Qt::QueuedConnection);
   QObject::connect(this, &AbstractStream::seekedTo, this, &AbstractStream::updateLastMsgsTo);
   QObject::connect(this, &AbstractStream::seeking, this, [this](double sec) { current_sec_ = sec; });
   QObject::connect(dbc(), &DBCManager::DBCFileChanged, this, &AbstractStream::updateMasks);
@@ -73,26 +73,36 @@ void AbstractStream::clearSuppressed() {
   }
 }
 
-void AbstractStream::updateLastMessages() {
-  auto prev_src_size = sources.size();
-  bool has_new_ids = false;
+void AbstractStream::syncLastMessages() {
+  std::vector<std::pair<MessageId, CanData>> snapshots;
   std::set<MessageId> msgs;
 
   {
     std::lock_guard lk(mutex_);
-    for (const auto &id : new_msgs_) {
-      const auto &can_data = messages_[id];
-      current_sec_ = std::max(current_sec_, can_data.ts);
-      auto& target_ptr = last_msgs[id];
-      if (target_ptr) {
-        *target_ptr = can_data;
-      } else {
-        target_ptr = std::make_unique<CanData>(can_data);
-        has_new_ids = true;
-      }
-      sources.insert(id.source);
+    if (new_msgs_.empty()) return;
+
+    snapshots.reserve(new_msgs_.size());
+    for (const auto& id : new_msgs_) {
+      snapshots.emplace_back(id, messages_[id]);
     }
     msgs = std::move(new_msgs_);
+  }
+
+  bool structure_changed = false;
+  const size_t prev_src_count = sources.size();
+
+  for (auto& [id, data] : snapshots) {
+    current_sec_ = std::max(current_sec_, data.ts);
+
+    auto& target = last_msgs[id];
+    if (target) {
+      *target = std::move(data);
+    } else {
+      target = std::make_unique<CanData>(std::move(data));
+      structure_changed = true;
+    }
+
+    if (sources.insert(id.source).second) structure_changed = true;
   }
 
   if (time_range_ && (current_sec_ < time_range_->first || current_sec_ >= time_range_->second)) {
@@ -100,11 +110,11 @@ void AbstractStream::updateLastMessages() {
     return;
   }
 
-  if (sources.size() != prev_src_size) {
+  if (sources.size() != prev_src_count) {
     updateMasks();
     emit sourcesUpdated(sources);
   }
-  emit msgsReceived(&msgs, has_new_ids);
+  emit msgsReceived(&msgs, structure_changed);
 }
 
 void AbstractStream::setTimeRange(const std::optional<std::pair<double, double>> &range) {
@@ -117,7 +127,7 @@ void AbstractStream::setTimeRange(const std::optional<std::pair<double, double>>
 
 void AbstractStream::updateEvent(const MessageId &id, double sec, const uint8_t *data, uint8_t size) {
   std::lock_guard lk(mutex_);
-  messages_[id].compute(id, data, size, sec, getSpeed(), masks_[id]);
+  messages_[id].update(id, data, size, sec, getSpeed(), masks_[id]);
   new_msgs_.insert(id);
 }
 
@@ -169,7 +179,7 @@ void AbstractStream::updateLastMsgsTo(double sec) {
       }
 
       auto prev = std::prev(it);
-      m.compute(id, (*prev)->dat, (*prev)->size, toSeconds((*prev)->mono_time), getSpeed(), {}, freq);
+      m.update(id, (*prev)->dat, (*prev)->size, toSeconds((*prev)->mono_time), getSpeed(), {}, freq);
       m.count = std::distance(ev.begin(), prev) + 1;
     }
   }
@@ -268,7 +278,7 @@ double calc_freq(const MessageId &msg_id, double current_sec) {
 
 }  // namespace
 
-void CanData::compute(const MessageId &msg_id, const uint8_t *can_data, const int size, double current_sec,
+void CanData::update(const MessageId &msg_id, const uint8_t *can_data, const int size, double current_sec,
                       double playback_speed, const std::vector<uint8_t> &mask, double in_freq) {
   ts = current_sec;
   ++count;

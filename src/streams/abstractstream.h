@@ -20,7 +20,12 @@
 #include "replay/include/util.h"
 
 struct CanData {
-  void compute(const MessageId &msg_id, const uint8_t *dat, const int size, double current_sec,
+  CanData() = default;
+  CanData(const CanData&) = default;
+  CanData& operator=(const CanData&) = default;
+  CanData(CanData&&) = default;
+  CanData& operator=(CanData&&) = default;
+  void update(const MessageId &msg_id, const uint8_t *dat, const int size, double current_sec,
                double playback_speed, const std::vector<uint8_t> &mask, double in_freq = 0);
 
   double ts = 0.;
@@ -118,7 +123,7 @@ protected:
   std::optional<std::pair<double, double>> time_range_;
 
 private:
-  void updateLastMessages();
+  void syncLastMessages();
   void updateLastMsgsTo(double sec);
   void updateMasks();
 
