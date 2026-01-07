@@ -50,7 +50,7 @@ class Signal {
 }  // namespace cabana
 
 // Helper functions
-double get_raw_value(const uint8_t* data, size_t data_size, const cabana::Signal& sig);
+double decodeSignal(const uint8_t* data, size_t data_size, const cabana::Signal& sig);
 void updateMsbLsb(cabana::Signal& s);
 inline int flipBitPos(int start_bit) { return 8 * (start_bit / 8) + 7 - start_bit % 8; }
 inline QString doubleToString(double value) { return QString::number(value, 'g', std::numeric_limits<double>::digits10); }

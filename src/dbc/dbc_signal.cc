@@ -43,10 +43,10 @@ QString cabana::Signal::formatValue(double value, bool with_unit) const {
 }
 
 bool cabana::Signal::getValue(const uint8_t* data, size_t data_size, double* val) const {
-  if (multiplexor && get_raw_value(data, data_size, *multiplexor) != multiplex_value) {
+  if (multiplexor && decodeSignal(data, data_size, *multiplexor) != multiplex_value) {
     return false;
   }
-  *val = get_raw_value(data, data_size, *this);
+  *val = decodeSignal(data, data_size, *this);
   return true;
 }
 
@@ -60,7 +60,7 @@ bool cabana::Signal::operator==(const cabana::Signal& other) const {
          multiplex_value == other.multiplex_value && type == other.type && receiver_name == other.receiver_name;
 }
 
-double get_raw_value(const uint8_t* data, size_t data_size, const cabana::Signal& sig) {
+double decodeSignal(const uint8_t* data, size_t data_size, const cabana::Signal& sig) {
   const int msb_byte = sig.msb / 8;
   if (msb_byte >= (int)data_size) return 0;
 
