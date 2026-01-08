@@ -1,4 +1,4 @@
-![Screenshot](src/assets/screenshot.png)
+![Screenshot](assets/screenshot.png)
 
 ## Cabana: CAN Bus Visualizer & Analyzer
 
