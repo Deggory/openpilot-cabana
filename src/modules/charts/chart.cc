@@ -11,9 +11,10 @@
 
 Chart::Chart(QChartView* parent) : parent_(parent), QChart() {
   setBackgroundVisible(false);
+  setMargins({0, 0, 0, 0});
+  layout()->setContentsMargins(4, 2, 4, 2);
   legend()->layout()->setContentsMargins(0, 0, 0, 0);
   legend()->setShowToolTips(true);
-  setMargins({0, 0, 0, 0});
 
   axis_x_ = new QValueAxis(this);
   axis_y_ = new QValueAxis(this);
