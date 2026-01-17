@@ -17,7 +17,7 @@ class MessageHeader : public QHeaderView {
  public slots:
   void updateFilters();
   void updateHeaderPositions();
-  void clearEditors(); 
+  void clearEditors();
 
  protected:
   void updateGeometries() override;
